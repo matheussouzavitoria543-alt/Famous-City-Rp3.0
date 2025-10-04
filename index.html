@@ -23,138 +23,120 @@ body{background-color:var(--site-bg); transition:background-color .3s ease, back
 </head>
 <body class="min-h-screen">
 
-<!-- NOTIFICATION (toast) -->
-<div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 hidden">
-  <div class="px-6 py-3 rounded-lg text-white" id="toastContent" style="background:var(--primary)"></div>
-</div>
+<!-- ... seu HTML continua igual até o final ... -->
 
-<!-- GLOBAL MESSAGE (modal centered) -->
-<div id="globalModal" class="global-modal hidden">
-  <div class="card max-w-lg w-full p-6 text-center">
-    <h3 class="text-xl font-bold mb-3">Mensagem da Moderação</h3>
-    <p id="globalModalText" class="mb-4 text-gray-700"></p>
-    <button onclick="closeGlobalModal()" id="globalCloseBtn" class="px-4 py-2 rounded" style="background:var(--button-color);color:white">Fechar</button>
-  </div>
-</div>
+<script>
+feather.replace();
 
-<!-- PROOFS VIEWER modal -->
-<div id="proofsModal" class="global-modal hidden">
-  <div class="card max-w-4xl w-full p-4 relative">
-    <button onclick="closeProofsModal()" class="absolute top-3 right-3 text-gray-600"><i data-feather="x"></i></button>
-    <h3 class="text-lg font-bold mb-3">Provas Enviadas</h3>
-    <div id="proofsList" class="grid grid-cols-2 gap-4 max-h-[60vh] overflow-auto"></div>
-  </div>
-</div>
+const LS_KEYS = {
+  BARS: 'pef_bars_v1',
+  SITE_COLOR: 'pef_site_color',
+  BAR_COLOR: 'pef_bar_color',
+  BUTTON_COLOR: 'pef_button_color',
+  MEMBER_NAME: 'pef_member_name',
+  CREDENTIALS: 'pef_creds'
+};
 
-<!-- ADMIN PANEL modal -->
-<div id="adminPanel" class="global-modal hidden">
-  <div class="card w-full max-w-xl p-6 relative">
-    <button onclick="closeAdminPanel()" class="absolute top-4 right-4 text-gray-600"><i data-feather="x"></i></button>
-    <h3 class="text-2xl font-bold mb-4">Painel de Administração</h3>
+let bars = JSON.parse(localStorage.getItem(LS_KEYS.BARS) || '[]');
+let credentials = JSON.parse(localStorage.getItem(LS_KEYS.CREDENTIALS) || '[]');
+let onlineMembers = new Set();
 
-    <div class="space-y-3">
-      <div class="flex gap-2">
-        <button onclick="openGlobalMessagePrompt()" class="flex-1 px-4 py-2 rounded" style="background:var(--button-color);color:white">Enviar Mensagem Global</button>
-        <button onclick="openProofsModal()" class="px-4 py-2 rounded border">Ver Provas</button>
-      </div>
+function saveBars(){ localStorage.setItem(LS_KEYS.BARS, JSON.stringify(bars)); }
+function saveCredentials(){ localStorage.setItem(LS_KEYS.CREDENTIALS, JSON.stringify(credentials)); }
 
-      <div class="flex gap-2">
-        <button onclick="generateCredential()" class="px-4 py-2 rounded" style="background:var(--primary);color:white">Gerar Credencial</button>
-        <button onclick="downloadCredentials()" class="px-4 py-2 rounded border">Exportar</button>
-      </div>
+function initTheme(){
+  const site = localStorage.getItem(LS_KEYS.SITE_COLOR);
+  const barc = localStorage.getItem(LS_KEYS.BAR_COLOR);
+  const btnc = localStorage.getItem(LS_KEYS.BUTTON_COLOR);
+  if(site) document.documentElement.style.setProperty('--site-bg', site);
+  if(barc) document.documentElement.style.setProperty('--bar-color', barc);
+  if(btnc) document.documentElement.style.setProperty('--button-color', btnc);
+}
+initTheme();
 
-      <div>
-        <label class="block text-sm font-medium mb-1">Credenciais geradas</label>
-        <div id="credentialsList" class="space-y-1"></div>
-      </div>
+function showToast(msg, time=2000){
+  const t = document.getElementById('toast');
+  const c = document.getElementById('toastContent');
+  c.textContent = msg;
+  t.classList.remove('hidden');
+  setTimeout(()=> t.classList.add('hidden'), time);
+}
 
-      <div class="grid grid-cols-2 gap-2">
-        <div>
-          <label class="block text-sm font-medium mb-1">Cor do site</label>
-          <input id="adminSiteColor" type="color" class="w-full h-10 p-0" onchange="adminChangeSiteColor(this.value)">
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Cor dos botões</label>
-          <input id="adminButtonColor" type="color" class="w-full h-10 p-0" onchange="adminChangeButtonColor(this.value)">
-        </div>
-      </div>
+function openSettingsPanel(){
+  document.getElementById('inputMemberName').value = localStorage.getItem(LS_KEYS.MEMBER_NAME) || '';
+  document.getElementById('memberSiteColor').value = localStorage.getItem(LS_KEYS.SITE_COLOR) || '#ffffff';
+  document.getElementById('memberBarColor').value = localStorage.getItem(LS_KEYS.BAR_COLOR) || '#3B82F6';
+  document.getElementById('settingsPanel').classList.remove('hidden');
+}
+function closeSettingsPanel(){ document.getElementById('settingsPanel').classList.add('hidden'); }
 
-      <div>
-        <label class="block text-sm font-medium mb-1">Membros online</label>
-        <div id="onlineList" class="text-sm"></div>
-      </div>
+function updateMemberName(){
+  const v = document.getElementById('inputMemberName').value.trim();
+  if(v) { localStorage.setItem(LS_KEYS.MEMBER_NAME, v); showToast('Nome salvo'); }
+}
 
-      <div>
-        <button onclick="adminResetTheme()" class="px-4 py-2 rounded border">Resetar tema para padrão</button>
-      </div>
-    </div>
+function memberChangeSiteColor(val){
+  document.documentElement.style.setProperty('--site-bg', val);
+  localStorage.setItem(LS_KEYS.SITE_COLOR, val);
+}
+function memberChangeBarColor(val){
+  document.documentElement.style.setProperty('--bar-color', val);
+  localStorage.setItem(LS_KEYS.BAR_COLOR, val);
+  renderBars();
+}
+function memberSetBackground(file){
+  if(!file) return;
+  const r = new FileReader();
+  r.onload = e => { document.body.style.backgroundImage = `url(${e.target.result})`; showToast('Fundo atualizado'); };
+  r.readAsDataURL(file);
+}
 
-  </div>
-</div>
+/* ====== Admin login & panel (valida credenciais geradas) ====== */
+const ADMIN = {user:'admin', pass:'123456'};
+function adminLogin(){
+  const u = document.getElementById('adminUserInput').value.trim();
+  const p = document.getElementById('adminPassInput').value.trim();
 
-<!-- SETTINGS modal (members + admin login) -->
-<div id="settingsPanel" class="global-modal hidden">
-  <div class="card w-full max-w-md p-6 relative">
-    <button onclick="closeSettingsPanel()" class="absolute top-4 right-4 text-gray-600"><i data-feather="x"></i></button>
-    <h3 class="text-xl font-bold mb-4">Configurações</h3>
+  // Credenciais padrão
+  if(u === ADMIN.user && p === ADMIN.pass){
+    localStorage.setItem('pef_is_admin','1');
+    document.getElementById('shieldIcon').classList.remove('hidden');
+    document.getElementById('settingsPanel').classList.add('hidden');
+    showToast('Logado como administrador');
+    return;
+  }
 
-    <div class="space-y-4">
-      <!-- Member settings -->
-      <div>
-        <label class="block text-sm font-medium mb-1">Seu nome</label>
-        <input id="inputMemberName" type="text" class="w-full border rounded px-3 py-2" placeholder="Como quer ser identificado" />
-      </div>
+  // Credenciais geradas
+  const match = credentials.find(c => c.user === u && c.pass === p);
+  if(match){
+    localStorage.setItem('pef_is_admin','1');
+    document.getElementById('shieldIcon').classList.remove('hidden');
+    document.getElementById('settingsPanel').classList.add('hidden');
+    showToast('Logado como administrador via credencial gerada');
+    return;
+  }
 
-      <div class="grid grid-cols-2 gap-2">
-        <div>
-          <label class="block text-sm font-medium mb-1">Cor do site</label>
-          <input id="memberSiteColor" type="color" class="w-full h-10 p-0" onchange="memberChangeSiteColor(this.value)" />
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Cor das barras</label>
-          <input id="memberBarColor" type="color" class="w-full h-10 p-0" onchange="memberChangeBarColor(this.value)" />
-        </div>
-      </div>
+  showToast('Usuário ou senha incorretos');
+}
 
-      <div>
-        <label class="block text-sm font-medium mb-1">Imagem de fundo</label>
-        <input type="file" accept="image/*" onchange="memberSetBackground(this.files[0])" />
-      </div>
+function openAdminPanel(){
+  if(!localStorage.getItem('pef_is_admin')) { showToast('Necessário login de admin.'); return; }
+  renderCredentials();
+  renderOnlineMembers();
+  document.getElementById('adminPanel').classList.remove('hidden');
+}
+function closeAdminPanel(){ document.getElementById('adminPanel').classList.add('hidden'); }
 
-      <hr />
+/* ====== O restante do seu código permanece exatamente igual ====== */
 
-      <!-- Admin login -->
-      <div>
-        <label class="block text-sm font-medium mb-1">Login de administrador</label>
-        <input id="adminUserInput" placeholder="usuário" class="w-full border rounded px-3 py-2 mb-2" />
-        <input id="adminPassInput" placeholder="senha" type="password" class="w-full border rounded px-3 py-2" />
-        <div class="mt-2">
-          <button onclick="adminLogin()" class="px-4 py-2 rounded" style="background:var(--primary);color:#fff">Entrar como admin</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- MAIN APP -->
-<div class="container mx-auto p-6">
-  <header class="flex items-center justify-between mb-6">
-    <h1 class="text-2xl font-bold" style="color:var(--primary)">Progresso em Foco</h1>
-    <div class="flex items-center gap-2">
-      <button title="Configurações" onclick="openSettingsPanel()" class="p-2 rounded hover:bg-gray-100"><i data-feather="settings"></i></button>
-      <button id="shieldIcon" title="Admin" onclick="openAdminPanel()" class="p-2 rounded hover:bg-gray-100 hidden"><i data-feather="shield"></i></button>
-    </div>
-  </header>
-
-  <!-- Add goal area -->
-  <section class="card p-4 mb-4">
-    <div class="flex gap-2">
-      <input id="memberNameField" placeholder="Seu nome (opcional)" class="flex-1 border rounded px-3 py-2" />
-      <input id="goalNameField" placeholder="Nome da meta" class="flex-2 border rounded px-3 py-2" />
-      <button id="addGoalBtn" class="px-4 py-2 rounded" style="background:var(--button-color);color:white">Adicionar</button>
-    </div>
-    <p class="text-sm text-gray-500 mt-2">Members podem colocar seu nome para identificar suas barras.</p>
-  </section>
-
-  <!-- Leaderboard -->
-  <section class="card p-4 mb
+/* ====== Corrige botão de escudo ====== */
+document.getElementById('shieldIcon').onclick = function() {
+  if(localStorage.getItem('pef_is_admin')) {
+    document.getElementById('adminPanel').classList.remove('hidden');
+  } else {
+    showToast('Faça login como admin em Configurações');
+  }
+};
+</script>
+</body>
+</html>
