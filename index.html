@@ -1,142 +1,231 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Progresso em Foco</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/feather-icons"></script>
 <style>
-:root{
-  --site-bg: #ffffff;
-  --primary: #3B82F6;
-  --bar-color: #3B82F6;
-  --button-color: #3B82F6;
-}
-body{background-color:var(--site-bg); transition:background-color .3s ease, background-image .3s ease;}
-.progress-bar{transition:width .45s ease-in-out;}
-.global-modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:60}
-.card{background:white;border-radius:.75rem;box-shadow:0 6px 24px rgba(0,0,0,.08);}
-.hidden{display:none;}
-.badge{font-size:.75rem;padding:.125rem .5rem;border-radius:.5rem;background:rgba(0,0,0,.06)}
+.progress-bar { transition: width 0.5s ease-in-out; }
+.notification { animation: slideIn 0.5s forwards, fadeOut 0.5s 2.5s forwards; }
+@keyframes slideIn { from { transform: translateY(-100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
 </style>
 </head>
-<body class="min-h-screen">
+<body class="bg-gray-50 min-h-screen">
 
-<!-- ... seu HTML continua igual até o final ... -->
+<!-- Notificação -->
+<div id="notification" class="notification fixed top-4 left-1/2 transform -translate-x-1/2 z-50 hidden">
+  <div class="bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center">
+    <i data-feather="alert-circle" class="mr-2"></i>
+    <span id="notification-message"></span>
+  </div>
+</div>
 
+<!-- Modal Configurações -->
+<div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-xl shadow-xl p-8 w-full max-w-md">
+    <div class="flex justify-between items-center mb-6 border-b pb-4">
+      <h3 class="text-2xl font-bold text-gray-800">Configurações</h3>
+      <button onclick="closeSettingsModal()" class="text-gray-500 hover:text-gray-700">
+        <i data-feather="x" class="w-6 h-6"></i>
+      </button>
+    </div>
+    <div class="space-y-6">
+      <!-- Cores -->
+      <div>
+        <h4 class="font-semibold mb-2">Tema do Sistema</h4>
+        <div class="flex gap-3 mb-4">
+          <button onclick="changeThemeColor('blue','#3B82F6')" class="w-10 h-10 rounded-lg bg-blue-500"></button>
+          <button onclick="changeThemeColor('green','#10B981')" class="w-10 h-10 rounded-lg bg-green-500"></button>
+          <button onclick="changeThemeColor('yellow','#F59E0B')" class="w-10 h-10 rounded-lg bg-yellow-500"></button>
+          <button onclick="changeThemeColor('red','#EF4444')" class="w-10 h-10 rounded-lg bg-red-500"></button>
+          <button onclick="changeThemeColor('purple','#8B5CF6')" class="w-10 h-10 rounded-lg bg-purple-500"></button>
+        </div>
+        <h4 class="font-semibold mb-2">Cor das Barras</h4>
+        <div class="flex gap-3">
+          <button onclick="changeBarColor('#3B82F6')" class="w-10 h-10 rounded-lg bg-blue-500"></button>
+          <button onclick="changeBarColor('#10B981')" class="w-10 h-10 rounded-lg bg-green-500"></button>
+          <button onclick="changeBarColor('#F59E0B')" class="w-10 h-10 rounded-lg bg-yellow-500"></button>
+          <button onclick="changeBarColor('#EF4444')" class="w-10 h-10 rounded-lg bg-red-500"></button>
+          <button onclick="changeBarColor('#8B5CF6')" class="w-10 h-10 rounded-lg bg-purple-500"></button>
+        </div>
+      </div>
+
+      <!-- Login Admin -->
+      <div class="pt-4 border-t">
+        <h4 class="font-semibold mb-2">Login do Administrador</h4>
+        <div class="mb-3">
+          <input id="adminUsername" type="text" placeholder="Usuário" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div class="mb-3">
+          <input id="adminPassword" type="password" placeholder="Senha" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+        </div>
+        <button onclick="loginAdmin()" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Entrar como Administrador</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Header / Conteúdo -->
+<div class="container mx-auto px-4 py-8">
+  <header class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold text-blue-500">Progresso em Foco</h1>
+    <div class="flex space-x-4">
+      <button onclick="openSettingsModal()" class="p-2 rounded-full hover:bg-gray-200"><i data-feather="settings"></i></button>
+      <button id="adminBtn" class="p-2 rounded-full hover:bg-gray-200 hidden" onclick="openAdminModal()"><i data-feather="shield"></i></button>
+    </div>
+  </header>
+
+  <!-- Adicionar Meta -->
+  <div class="bg-white rounded-lg shadow p-6 mb-8">
+    <h2 class="text-xl font-semibold mb-4">Adicionar Nova Meta</h2>
+    <div class="flex gap-4">
+      <input id="newBarName" type="text" placeholder="Nome da Meta" class="border rounded p-2 flex-1">
+      <button id="addBarBtn" class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">Adicionar</button>
+    </div>
+  </div>
+
+  <!-- Placar Geral -->
+  <div class="bg-white rounded-lg shadow p-6 mb-8">
+    <h2 class="text-xl font-semibold mb-4">Placar Geral</h2>
+    <div id="leaderboard" class="space-y-2"></div>
+  </div>
+
+  <!-- Barras -->
+  <div id="barsContainer" class="space-y-6"></div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
+
+// Configuração do Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyDun-EEYvE7pUYtJCS7APB6J4xSD-gN0oE",
+  authDomain: "famous-city-rp.firebaseapp.com",
+  databaseURL: "https://famous-city-rp-default-rtdb.firebaseio.com",
+  projectId: "famous-city-rp",
+  storageBucket: "famous-city-rp.firebasestorage.app",
+  messagingSenderId: "938453127813",
+  appId: "1:938453127813:web:a3b9b977039a39babacfec",
+  measurementId: "G-HQ8SGS11BP"
+};
+
+const app = initializeApp(firebaseConfig);
+const database = getDatabase(app);
+
+// Exporta para scripts globais
+window.database = database;
+</script>
+
+<!-- Script principal -->
 <script>
 feather.replace();
 
-const LS_KEYS = {
-  BARS: 'pef_bars_v1',
-  SITE_COLOR: 'pef_site_color',
-  BAR_COLOR: 'pef_bar_color',
-  BUTTON_COLOR: 'pef_button_color',
-  MEMBER_NAME: 'pef_member_name',
-  CREDENTIALS: 'pef_creds'
-};
+let bars = [];
+let isAdmin = false;
+let admins = [{username:'admin', password:'123456'}];
+let barColor = '#3B82F6';
 
-let bars = JSON.parse(localStorage.getItem(LS_KEYS.BARS) || '[]');
-let credentials = JSON.parse(localStorage.getItem(LS_KEYS.CREDENTIALS) || '[]');
-let onlineMembers = new Set();
-
-function saveBars(){ localStorage.setItem(LS_KEYS.BARS, JSON.stringify(bars)); }
-function saveCredentials(){ localStorage.setItem(LS_KEYS.CREDENTIALS, JSON.stringify(credentials)); }
-
-function initTheme(){
-  const site = localStorage.getItem(LS_KEYS.SITE_COLOR);
-  const barc = localStorage.getItem(LS_KEYS.BAR_COLOR);
-  const btnc = localStorage.getItem(LS_KEYS.BUTTON_COLOR);
-  if(site) document.documentElement.style.setProperty('--site-bg', site);
-  if(barc) document.documentElement.style.setProperty('--bar-color', barc);
-  if(btnc) document.documentElement.style.setProperty('--button-color', btnc);
-}
-initTheme();
-
-function showToast(msg, time=2000){
-  const t = document.getElementById('toast');
-  const c = document.getElementById('toastContent');
-  c.textContent = msg;
-  t.classList.remove('hidden');
-  setTimeout(()=> t.classList.add('hidden'), time);
+// --- Firebase funções ---
+function saveBarsToFirebase() {
+  set(ref(database, 'bars/'), bars)
+    .then(()=>console.log('Barras salvas'))
+    .catch(err=>console.error(err));
 }
 
-function openSettingsPanel(){
-  document.getElementById('inputMemberName').value = localStorage.getItem(LS_KEYS.MEMBER_NAME) || '';
-  document.getElementById('memberSiteColor').value = localStorage.getItem(LS_KEYS.SITE_COLOR) || '#ffffff';
-  document.getElementById('memberBarColor').value = localStorage.getItem(LS_KEYS.BAR_COLOR) || '#3B82F6';
-  document.getElementById('settingsPanel').classList.remove('hidden');
-}
-function closeSettingsPanel(){ document.getElementById('settingsPanel').classList.add('hidden'); }
-
-function updateMemberName(){
-  const v = document.getElementById('inputMemberName').value.trim();
-  if(v) { localStorage.setItem(LS_KEYS.MEMBER_NAME, v); showToast('Nome salvo'); }
+function loadBarsFromFirebase() {
+  const barsRef = ref(database, 'bars/');
+  onValue(barsRef, (snapshot) => {
+    bars = snapshot.val() || [];
+    renderBars();
+    updateLeaderboard();
+  });
 }
 
-function memberChangeSiteColor(val){
-  document.documentElement.style.setProperty('--site-bg', val);
-  localStorage.setItem(LS_KEYS.SITE_COLOR, val);
-}
-function memberChangeBarColor(val){
-  document.documentElement.style.setProperty('--bar-color', val);
-  localStorage.setItem(LS_KEYS.BAR_COLOR, val);
-  renderBars();
-}
-function memberSetBackground(file){
-  if(!file) return;
-  const r = new FileReader();
-  r.onload = e => { document.body.style.backgroundImage = `url(${e.target.result})`; showToast('Fundo atualizado'); };
-  r.readAsDataURL(file);
+// ---------- Helpers ----------
+function showNotification(msg){
+  const el = document.getElementById('notification');
+  document.getElementById('notification-message').textContent = msg;
+  el.classList.remove('hidden');
+  setTimeout(()=>el.classList.add('hidden'), 2500);
 }
 
-/* ====== Admin login & panel (valida credenciais geradas) ====== */
-const ADMIN = {user:'admin', pass:'123456'};
-function adminLogin(){
-  const u = document.getElementById('adminUserInput').value.trim();
-  const p = document.getElementById('adminPassInput').value.trim();
+// ---------- Settings modal ----------
+function openSettingsModal(){ document.getElementById('settingsModal').classList.remove('hidden'); }
+function closeSettingsModal(){ document.getElementById('settingsModal').classList.add('hidden'); }
+function changeThemeColor(name, hex){ document.documentElement.style.setProperty('--color-primary', hex); showNotification('Tema alterado'); }
+function changeBarColor(hex){ barColor = hex; renderBars(); showNotification('Cor da barra alterada'); }
 
-  // Credenciais padrão
-  if(u === ADMIN.user && p === ADMIN.pass){
-    localStorage.setItem('pef_is_admin','1');
-    document.getElementById('shieldIcon').classList.remove('hidden');
-    document.getElementById('settingsPanel').classList.add('hidden');
-    showToast('Logado como administrador');
-    return;
-  }
-
-  // Credenciais geradas
-  const match = credentials.find(c => c.user === u && c.pass === p);
-  if(match){
-    localStorage.setItem('pef_is_admin','1');
-    document.getElementById('shieldIcon').classList.remove('hidden');
-    document.getElementById('settingsPanel').classList.add('hidden');
-    showToast('Logado como administrador via credencial gerada');
-    return;
-  }
-
-  showToast('Usuário ou senha incorretos');
-}
-
-function openAdminPanel(){
-  if(!localStorage.getItem('pef_is_admin')) { showToast('Necessário login de admin.'); return; }
-  renderCredentials();
-  renderOnlineMembers();
-  document.getElementById('adminPanel').classList.remove('hidden');
-}
-function closeAdminPanel(){ document.getElementById('adminPanel').classList.add('hidden'); }
-
-/* ====== O restante do seu código permanece exatamente igual ====== */
-
-/* ====== Corrige botão de escudo ====== */
-document.getElementById('shieldIcon').onclick = function() {
-  if(localStorage.getItem('pef_is_admin')) {
-    document.getElementById('adminPanel').classList.remove('hidden');
+// ---------- Admin ----------
+function loginAdmin(){
+  const user = document.getElementById('adminUsername').value.trim();
+  const pass = document.getElementById('adminPassword').value.trim();
+  const found = admins.find(a => a.username === user && a.password === pass);
+  if(found){
+    isAdmin = true;
+    document.getElementById('adminBtn').classList.remove('hidden');
+    closeSettingsModal();
+    showNotification('Login de administrador realizado!');
   } else {
-    showToast('Faça login como admin em Configurações');
+    alert('Usuário ou senha incorretos.');
   }
-};
+}
+
+// ---------- Barras ----------
+function renderBars(){
+  const container = document.getElementById('barsContainer');
+  container.innerHTML = '';
+  bars.forEach((bar, index) => {
+    const barEl = document.createElement('div');
+    barEl.className = 'bg-white rounded-lg shadow p-6';
+    barEl.innerHTML = `
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold">${bar.name} <span class="text-sm text-gray-500">(${bar.member||'Membro'})</span></h3>
+      </div>
+      <div class="flex items-center space-x-4 mb-2">
+        <div class="flex-1 h-4 bg-gray-200 rounded-full overflow-hidden">
+          <div class="progress-bar h-full rounded-full" style="width:${bar.progress}%; background-color:${barColor}"></div>
+        </div>
+        <span>${bar.progress}%</span>
+      </div>
+    `;
+    container.appendChild(barEl);
+  });
+}
+
+function updateLeaderboard(){
+  const lb = document.getElementById('leaderboard');
+  lb.innerHTML = '';
+  const sorted = [...bars].sort((a,b)=>b.progress - a.progress);
+  sorted.forEach(b=>{
+    const div = document.createElement('div');
+    div.className='flex justify-between bg-gray-100 p-2 rounded';
+    div.innerHTML=`<span>${b.member||'Membro'} - ${b.name}</span><span>${b.progress}%</span>`;
+    lb.appendChild(div);
+  });
+}
+
+// ---------- Adicionar barra ----------
+document.getElementById('addBarBtn').addEventListener('click', ()=> {
+  const name = document.getElementById('newBarName').value.trim();
+  if(!name){ alert('Digite o nome da meta'); return; }
+  const member = prompt('Digite seu nome para identificação:', 'Membro') || 'Membro';
+  bars.push({name, progress: 0, proofs: [], member});
+  saveBarsToFirebase(); // salva no Firebase
+  document.getElementById('newBarName').value='';
+  renderBars();
+  updateLeaderboard();
+  showNotification('Meta adicionada');
+});
+
+// ---------- Inicialização ----------
+document.addEventListener('DOMContentLoaded', ()=>{
+  loadBarsFromFirebase();
+});
 </script>
 </body>
 </html>
