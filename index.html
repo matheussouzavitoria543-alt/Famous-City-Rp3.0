@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Progresso em Foco</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+
+  <!-- Header -->
+  <header class="flex justify-between items-center bg-blue-600 text-white p-4">
+    <h1 class="text-xl font-bold">Progresso em Foco</h1>
+    <div class="flex gap-4">
+      <button id="btnConfig" class="hover:text-gray-200">⚙️</button>
+      <button id="btnAdmin" class="hover:text-gray-200">🛡️</button>
+    </div>
+  </header>
+
+  <!-- Área principal -->
+  <main class="p-6">
+    <h2 class="text-lg font-bold">Suas Metas</h2>
+    <div id="barrasContainer" class="mt-4 space-y-4"></div>
+  </main>
+
+  <!-- Tela de Login do Administrador -->
+  <div id="loginArea" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center hidden">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-80 text-center">
+      <h2 class="text-lg font-bold mb-4">Login de Administrador</h2>
+      <input id="adminUsuario" type="text" placeholder="Usuário" class="border p-2 w-full mb-2">
+      <input id="adminSenha" type="password" placeholder="Senha" class="border p-2 w-full mb-2">
+      <button onclick="loginAdmin()" class="bg-blue-600 text-white px-4 py-2 rounded w-full">Entrar</button>
+      <button onclick="fecharLogin()" class="mt-2 text-sm text-gray-500">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- Área de Administração -->
+  <div id="adminArea" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-[500px]">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold">Área de Administração</h2>
+        <button onclick="fecharAdmin()" class="text-red-500 font-bold">X</button>
+      </div>
+      <ul class="space-y-2 mb-4">
+        <li>📊 Visualizar Progresso dos Membros</li>
+        <li>✉️ Enviar Mensagem Global</li>
+        <li>🎨 Alterar cores do site</li>
+        <li>🔑 Gerar credenciais</li>
+      </ul>
+
+      <!-- Gerar Credenciais -->
+      <div class="border-t pt-4">
+        <h3 class="font-bold mb-2">Gerar Credenciais</h3>
+        <input id="novoUsuario" type="text" placeholder="Novo usuário" class="border p-2 w-full mb-2">
+        <input id="novaSenha" type="password" placeholder="Nova senha" class="border p-2 w-full mb-2">
+        <button onclick="gerarCredencial()" class="bg-green-600 text-white px-4 py-2 rounded w-full">Adicionar</button>
+
+        <!-- Lista de credenciais -->
+        <ul id="listaCredenciais" class="mt-4 space-y-2 text-sm text-gray-700"></ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Credenciais válidas para admin
+    let adminCredenciais = [
+      { usuario: "admin1", senha: "1234" },
+      { usuario: "admin2", senha: "abcd" }
+    ];
+
+    // Abrir tela de login
+    document.getElementById("btnAdmin").addEventListener("click", () => {
+      document.getElementById("loginArea").classList.remove("hidden");
+    });
+
+    // Login admin
+    function loginAdmin() {
+      const usuario = document.getElementById("adminUsuario").value;
+      const senha = document.getElementById("adminSenha").value;
+
+      const adminValido = adminCredenciais.find(admin =>
+        admin.usuario === usuario && admin.senha === senha
+      );
+
+      if (adminValido) {
+        document.getElementById("loginArea").classList.add("hidden");
+        document.getElementById("adminArea").classList.remove("hidden");
+        atualizarListaCredenciais();
+      } else {
+        alert("❌ Credenciais inválidas. Tente novamente.");
+      }
+    }
+
+    function fecharLogin() {
+      document.getElementById("loginArea").classList.add("hidden");
+    }
+
+    function fecharAdmin() {
+      document.getElementById("adminArea").classList.add("hidden");
+    }
+
+    // Função para gerar novas credenciais
+    function gerarCredencial() {
+      const usuario = document.getElementById("novoUsuario").value.trim();
+      const senha = document.getElementById("novaSenha").value.trim();
+
+      if (usuario && senha) {
+        adminCredenciais.push({ usuario, senha });
+        atualizarListaCredenciais();
+        document.getElementById("novoUsuario").value = "";
+        document.getElementById("novaSenha").value = "";
+      } else {
+        alert("⚠️ Preencha usuário e senha.");
+      }
+    }
+
+    // Função para excluir credenciais
+    function excluirCredencial(index) {
+      if (confirm("Tem certeza que deseja excluir esta credencial?")) {
+        adminCredenciais.splice(index, 1);
+        atualizarListaCredenciais();
+      }
+    }
+
+    // Atualizar lista de credenciais na área admin
+    function atualizarListaCredenciais() {
+      const lista = document.getElementById("listaCredenciais");
+      lista.innerHTML = "";
+      adminCredenciais.forEach((cred, index) => {
+        const li = document.createElement("li");
+        li.className = "flex justify-between items-center bg-gray-100 p-2 rounded";
+        li.innerHTML = `
+          <span>${index + 1}. Usuário: <b>${cred.usuario}</b> | Senha: <b>${cred.senha}</b></span>
+          <button onclick="excluirCredencial(${index})" class="text-red-600 hover:text-red-800">🗑️</button>
+        `;
+        lista.appendChild(li);
+      });
+    }
+  </script>
+</body>
+</html>
